@@ -10,21 +10,20 @@
  	#li 	$v0, 4
  	#la	$a0, stringTest98
     	#syscall
- 
 	#CHAMA DRAW GRID
 	add 	$a0, $zero, GRID_ROWS	#a0 = 35
 	add 	$a1, $zero, GRID_COLS	#a1 = 35
 	la 	$a2, grid		#a2 = &grid
 	jal 	drawGrid    		# void drawGrid(a0,a1,a2)
 	
-	#jal enableProcessorInterrupt
-	jal enableKeyboardInterrupt	# void enableKeyboardInterrupt()
+	#jal 	enableProcessorInterrupt
+	jal 	enableKeyboardInterrupt	# void enableKeyboardInterrupt()
     	
-    	#SysLock #While(1); Usefull to test imterrupts
+#SysLock # While(1); Usefull to test imterrupts
 
-   	#la $s5, 0xffff0000
-	#li $s6, 0x02
-	#sw $s6, 0($s5)
+   	#la 	$s5, 0xffff0000
+	#li 	$s6, 0x02
+	#sw 	$s6, 0($s5)
 	
 main:
 	la 	$s0, pacman	# s0 = &pacman
@@ -63,12 +62,12 @@ main:
    	j 	main		# goto main
 #############################################################################################################    
 
- enableProcessorInterrupt:
-	add $t0, $zero, 1	# t0 = 1
-	sll $t0, $t0, 8		# t0 = t0 << 8
-	or $12, $t0, $12	# $12 = t0 | $12
-	ori $12, $12, 1		# $12 = $12 | 1
-	jr   $ra		# return
+ enableProcessorInterrupt: ###### Why this?
+	add 	$t0, $zero, 1	# t0 = 1
+	sll 	$t0, $t0, 8	# t0 = t0 << 8
+	or 	$12, $t0, $12	# $12 = t0 | $12
+	ori 	$12, $12, 1	# $12 = $12 | 1
+	jr   	$ra		# return
 
  enableKeyboardInterrupt:
 	add 	$t0, $zero, 0xffff0002	# t0 = 0xffff0002
@@ -79,47 +78,46 @@ main:
 # draw_grid(width, height, *grid_table)
 .globl drawGrid
 drawGrid:
-	addi $sp, $sp, -40
-	sw $ra, 36($sp)
-	sw $s0, 16($sp)
-	sw $s1, 20($sp)
-	sw $s2, 24($sp)
- 	sw $s3, 28($sp)
-	sw $s4, 32($sp)
+	addi 	$sp, $sp, -40	#sp = sp -40
+	sw 	$ra, 36($sp)	#sp[9] = ra
+	sw 	$s0, 16($sp)	#sp[4] = s0
+	sw 	$s1, 20($sp)	#sp[5] = s1
+	sw 	$s2, 24($sp)	#sp[6] = s2
+ 	sw 	$s3, 28($sp)	#sp[7] = s3
+	sw 	$s4, 32($sp)	#sp[8] = s4
 	
-	move $s0, $a0
-	move $s1, $a1
-	move $s2, $a2
+	move 	$s0, $a0	
+	move 	$s1, $a1
+	move 	$s2, $a2
 	
-	#li   $s3, 0
-	add $s3, $zero, $zero
+	add 	$s3, $zero, $zero
 	
 drawGridLinha:	
-	bge  $s3, $s0, drawGridExit #exit_grid
+	bge  	$s3, $s0, drawGridExit #exit_grid
 	#li   $s4, 0
-	add $s4, $zero, $zero
+	add 	$s4, $zero, $zero
 drawGridColuna:	
-	bge  $s4, $s1, drawGridColunaExit#exit_coluna
-	lb   $a2, 0($s2)
-	addi $a2,$a2,-64
-	mulu $a1, $s3, 7 
-	mulu $a0, $s4, 7 
-	jal  drawSprite
-	addi $s2,$s2,1
-	addi $s4, $s4, 1
-	j drawGridColuna
+	bge  	$s4, $s1, drawGridColunaExit#exit_coluna
+	lb   	$a2, 0($s2)
+	addi 	$a2,$a2,-64
+	mulu 	$a1, $s3, 7 
+	mulu 	$a0, $s4, 7 
+	jal  	drawSprite
+	addi 	$s2,$s2,1
+	addi 	$s4, $s4, 1
+	j 	drawGridColuna
 drawGridColunaExit:
 	addi 	$s3, $s3, 1
 	j 	drawGridLinha
 drawGridExit:	
-	lw $ra, 36($sp)
-	lw $s0, 16($sp)
-	lw $s1, 20($sp)
-	lw $s2, 24($sp)
- 	lw $s3, 28($sp)
- 	lw $s4, 32($sp)
-	addi $sp, $sp, 40
-	jr   $ra
+	lw 	$ra, 36($sp)
+	lw 	$s0, 16($sp)
+	lw 	$s1, 20($sp)
+	lw 	$s2, 24($sp)
+ 	lw 	$s3, 28($sp)
+ 	lw 	$s4, 32($sp)
+	addi 	$sp, $sp, 40
+	jr   	$ra
 #############################################################################################################
 
 # draw_sprite(X, Y, sprite_id) 
@@ -127,50 +125,60 @@ drawGridExit:
 .globl drawSprite
 drawSprite:
 	
-	addi $sp, $sp, -40		#sp = sp -40
-	sw $ra, 36($sp)			#sp[9] = ra
-	sw $s0, 16($sp)			#sp[4] = s0
-	sw $s1, 20($sp)			#sp[5] = s1
-	sw $s2, 24($sp)			#sp[6] = s2
- 	sw $s3, 28($sp)			#sp[7] = s3
-	sw $s4, 32($sp)			#sp[8] = s4
+	addi 	$sp, $sp, -40		#sp = &sp -40
+	sw 	$ra, 36($sp)		#sp[9] = ra
+	sw 	$s0, 16($sp)		#sp[4] = s0
+	sw 	$s1, 20($sp)		#sp[5] = s1
+	sw 	$s2, 24($sp)		#sp[6] = s2
+ 	sw 	$s3, 28($sp)		#sp[7] = s3
+	sw 	$s4, 32($sp)		#sp[8] = s4
 	
-	move $s0, $a0			# s0 = a0
-	move $s1, $a1			# s1 = a1
+	move 	$s0, $a0		# s0 = a0
+	move 	$s1, $a1		# s1 = a1
 	
-	la $s2, sprites 		# s2 = &sprites
-	mul $t1, $a2, SPRITE_SIZE	# t1 = a2 * SPRITE_SIZE(49)
-	add $s2, $t1, $s2		# s2 = t1 + s2
+	la 	$s2, sprites 		# s2 = &sprites
+	mul 	$t1, $a2, SPRITE_SIZE	# t1 = a2 * SPRITE_SIZE(49)
+	add 	$s2, $t1, $s2		# s2 = t1 + s2
 
 	
-	la $s4, colors			# s4 = &colors
-	add $s3, $zero, $zero		# s3 = 0
+	la 	$s4, colors		# s4 = &colors
+	add 	$s3, $zero, $zero	# s3 = 0
 drawSpriteLoop:	
-	bge $s3, SPRITE_SIZE, drawSpriteEnd
-	#bge $zero, SPRITE_SIZE, drawSpriteEnd
-	lbu $t3, 0($s2)
-	sll $t3, $t3, 2
-	add $t3, $t3, $s4
-	lw  $a2, 0($t3)
-	div $t5, $s3, 7 #t5 y
-	mfhi $t6 #t6 X
-	add $a0, $s0, $t6
-	add $a1, $s1, $t5
+	bge 	$s3, SPRITE_SIZE, drawSpriteEnd	# ((s3 <= SPRITE_SIZE) ? drawSpriteEnd)
 	
-	jal drawPixel
-	addi $s3, $s3, 1 #div por 7 o resto vai ser x e outro y
-	addi $s2, $s2, 1
-	b drawSpriteLoop
+	
+	lb     $t3, 0($s2) 	# PROBLEM
+	#printString ("\n LOAD BYTE value")
+	#printInt ($t3)
+
+	#lbu 	$t3, 0($s2)		# ?
+	#printString ("\n LBU value:")
+	#printInt ($t3)
+
+	
+	sll 	$t3, $t3, 2
+	add 	$t3, $t3, $s4
+	lw  	$a2, 0($t3)
+	div 	$t5, $s3, 7 		#t5 y
+	mfhi 	$t6 			#t6 X
+	add 	$a0, $s0, $t6
+	add 	$a1, $s1, $t5
+	
+	jal 	drawPixel
+	addi 	$s3, $s3, 1 #div por 7 o resto vai ser x e outro y
+	addi 	$s2, $s2, 1
+	#b 	drawSpriteLoop
+	j 	drawSpriteLoop
 	
 drawSpriteEnd:
-	lw $ra, 36($sp)			# ra = sp[9]
-	lw $s0, 16($sp)			# s0 = sp[4]
-	lw $s1, 20($sp)			# s1 = sp[5]
-	lw $s2, 24($sp)			# s2 = sp[6]
- 	lw $s3, 28($sp)			# s3 = sp[7]
- 	lw $s4, 32($sp)			# s4 = sp[8]
-	addi $sp, $sp, 40		# sp = sp + 40
-    	jr   $ra			# return
+	lw 	$ra, 36($sp)		# ra = sp[9]
+	lw 	$s0, 16($sp)		# s0 = sp[4]
+	lw 	$s1, 20($sp)		# s1 = sp[5]
+	lw 	$s2, 24($sp)		# s2 = sp[6]
+ 	lw 	$s3, 28($sp)		# s3 = sp[7]
+ 	lw 	$s4, 32($sp)		# s4 = sp[8]
+	addi 	$sp, $sp, 40		# sp = sp + 40
+    	jr   	$ra			# return
 #############################################################################################################	
 
 # drawPixel(X, Y, color)
@@ -244,16 +252,17 @@ apply_final:
 	mfhi 	$s0
 	add 	$s1, $s1, $a1
 	add 	$s0, $s0, $a0
-	add  	$s1, $s1,$s0 #((s1*linha)+s0)
-	sll 	$s1, $s1, 2
-	add  	$s1,$s1, $a2
-	lbu   	$s1, 0($s1)
-	addi 	$v0, $s1, -64
+	add  	$s1, $s1,$s0 	# ((s1*linha)+s0)
+	sll 	$s1, $s1, 2	# s1 = s1 << 2
+	add  	$s1,$s1, $a2	# s1 = s1 + a2
+	#lbu   	$s1, 0($s1)	# ?
+	lb   	$s1, 0($s1)	# ?
+	addi 	$v0, $s1, -64	# v0 = s1 - 64
 		
 	lw 	$ra, 24($sp)
 	lw 	$s1, 16($sp)
 	lw 	$s0, 20($sp)
-	addi 	$sp, $sp, 32	# &sp = &sp + 32
+	addi 	$sp, $sp, 32	# sp = &sp + 32
 	jr 	$ra		# Return
 #############################################################################################################
 
@@ -320,10 +329,10 @@ checkWallEnd:
   	sw    	$k0, 120($k1)
   	mflo  	$k0
   	sw    	$k0, 124($k1)
+  	
   	la    	$a0, stringGenericEx    
   	li    	$v0, 4
-  	syscall
-    	#jal 	printString          
+  	syscall    
 
   	mfc0  	$a0, $13
   	andi  	$a0,$a0,0x007C
