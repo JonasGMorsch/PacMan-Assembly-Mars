@@ -8,24 +8,26 @@
 .eqv Y_SCALE   7
 
 .eqv GRID_ROWS 35       
-.eqv GRID_COLS 35
+.eqv GRID_COLS 35       
+.eqv GRID_ID_OFFSET -64
 
-.macro animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
+
+.macro animatedSprite (%name, %id, %posX, %posY, %movX, %movY)
 .data
 %name:
 .align 2
 	.word %id
-	.word %pos_x
-	.word %pos_y
-	.word %mov_x
-	.word %mov_y
+	.word %posX
+	.word %posY
+	.word %movX
+	.word %movY
 .end_macro
 
-	animated_sprite(pacman, 3, 119, 140, 0, 0)
-	animated_sprite(ghost0, 2, 105, 105, 0, 0)
-	animated_sprite(ghost1, 2, 105, 119, 0, 0)
-	animated_sprite(ghost2, 2, 133, 105, 0, 0)
-	animated_sprite(ghost3, 2, 133, 119, 0, 0)
+	animatedSprite(pacman, 3, 119, 140, 0, 0)
+	animatedSprite(ghost0, 2, 105, 105, 0, 0)
+	animatedSprite(ghost1, 2, 105, 119, 0, 0)
+	animatedSprite(ghost2, 2, 133, 105, 0, 0)
+	animatedSprite(ghost3, 2, 133, 119, 0, 0)
   
 .data
 # 35x35 Pacman Arena - Sprites 7x7
