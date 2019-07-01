@@ -13,6 +13,7 @@
 
 
 .macro animatedSprite (%name, %id, %posX, %posY, %movX, %movY)
+#		 	ofset:	&  ,  0 ,    4 ,    8 ,   12 ,   16
 .data
 %name:
 .align 2

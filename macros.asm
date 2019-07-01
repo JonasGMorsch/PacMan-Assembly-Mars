@@ -9,8 +9,6 @@
     syscall
 .end_macro
 
-
-
 .macro printString (%str)
 .data 
 mStr: .asciiz %str
