@@ -22,7 +22,7 @@
 #############################################################################################################    
 
 	#CHAMA DRAW GRID
-	#jal 	drawGridHardCoded   			# void drawGridLinear(void)
+	jal 	drawGridHardCoded   			# void drawGridLinear(void)
 	#EndProgram
 	#jal 	enableProcessorInterrupt
 	jal 	enableKeyboardInterrupt	# void enableKeyboardInterrupt()
@@ -31,44 +31,231 @@
 
 #############################################################################################################    
 main:
-#animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
-#		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16
 
 	la 	$a0, pacman	# s0 = &pacman			# name
 	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
+	#EndProgram
 
 	la 	$a0, pacman	# a0 = &pacman
-	jal 	applyMovement	# void enableMovement(a0)
+	jal 	moveSprite	# void enableMovement(a0)
 	
 	la 	$a0, ghost0	# s0 = &ghost0
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
+	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	
 	la 	$a0, ghost1	# s0 = &ghost1
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
+	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	
 	la 	$a0, ghost2	# s0 = &ghost2
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
+	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	
 	la 	$a0, ghost3	# s0 = &ghost3
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
-
+	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
+	DelayMs(10)
+	#DelayMs(500)
    	b 	main			# goto main
 #############################################################################################################    
 
-#############################################################################################################
- enableProcessorInterrupt: ###### Why this?
-	add 	$t0, $zero, 1	# t0 = 1
-	sll 	$t0, $t0, 8	# t0 = t0 << 8
-	or 	$12, $t0, $12	# $12 = t0 | $12
-	ori 	$12, $12, 1	# $12 = $12 | 1
-	jr   $ra			# return
+#########################################################################################################
 
- enableKeyboardInterrupt:
-	add 	$t0, $zero, 0xffff0002	# t0 = 0xffff0002
-	sw 	$t0, 0xffff0000		# *((uint32_t) 0xffff0000) = t0
-	jr   $ra					# return
-#############################################################################################################    
+.globl moveSprite
+moveSprite:
+	addi $sp, $sp, -64		#allocate 8 bytes on stack
+	sw 	$ra, 12($sp)
+	sw 	$s0, 16($sp)
+	sw 	$s1, 20($sp)
+	sw 	$s2, 24($sp)
+ 	sw 	$s3, 28($sp)
+	sw 	$s4, 32($sp)
+	sw 	$s5, 36($sp)
+	sw 	$s6, 40($sp)
+	sw 	$s7, 44($sp)
 	
+	##################### a0 = &sprite			
+	lw 	$s0, 0($a0)	# sprite.id
+	lw 	$s1, 4($a0)	# sprite.posX
+	lw 	$s2, 8($a0)	# sprite.posY 
+ 	lw 	$s3, 12($a0)	# sprite.movX 
+	lw 	$s4, 16($a0)	# sprite.movY 
+	
+	#jal	returnNextId
+	jal	checkWall
+	#printString("\n ID: ")
+	#printInt($v0)
+	bge	$v0,	69,	moveSpriteEnd	# (returnNextId(struct sprite) > 69) ? goto moveSpriteEnd
+	#ble 	$v0,	83,	moveSpriteEnd
+	
+	bne	$s3, $zero, moveSpriteIsNotZero # (!s1) ? goto moveSpriteNonZero
+	beq	$s4, $zero, moveSpriteEnd	# (s2) ? goto moveSpriteEnd
+	#b	moveSpriteEnd
+	
+moveSpriteIsNotZero:	
+
+	add 	$s1, $s1, $s3
+	add 	$s2, $s2, $s4
+	
+	#la 	$a0, pacman
+	
+	sw 	$s1, 4($a0)	# sprite.posX
+	sw 	$s2, 8($a0)	# sprite.posY 
+	
+	#b	moveSpriteEnd
+
+moveSpriteEnd:
+	lw 	$ra, 12($sp)
+	lw 	$s0, 16($sp)
+	lw 	$s1, 20($sp)
+	lw 	$s2, 24($sp)
+ 	lw 	$s3, 28($sp)
+	lw 	$s4, 32($sp)
+	lw 	$s5, 36($sp)
+	lw 	$s6, 40($sp)
+	lw 	$s7, 44($sp)
+	addi	$sp, $sp, 64		
+    	jr  	$ra				# return
+	
+#############################################################################################################
+
+#############################################################################################################
+.globl checkWall
+ checkWall:		# int ID checkWall(X,Y, *gride)
+	addi $sp, $sp, -24
+	sw 	$ra, 0($sp)
+	sw 	$s0, 4($sp)
+	sw 	$s1, 8($sp)
+	sw 	$s2, 12($sp)
+	sw 	$s3, 16($sp)
+	sw 	$s4, 20($sp)
+	
+#animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
+#		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16	
+	lw	$s0, 4($a0) 	# s0 = animatedSprite.posX;
+	lw	$s1, 8($a0) 	# s1 = animatedSprite.posY;
+	lw	$s2, 12($a0)	# s2 = animatedSprite.movX;
+	lw	$s3, 16($a0)	# s3 = animatedSprite.movY;
+	la 	$s4,	grid
+
+checkWallCheckUpLeft:
+	jal 	checkWallMain
+	add	$t0, $zero, $v0
+	printString("\n UL: ")	
+	printInt($t0)		
+
+checkWallCheckUpRight:
+	add 	$s0, $s0,	6 		# tPosX=animatedSprite.posX + 6;
+	jal 	checkWallMain
+	
+	sgt	$t1, $v0, $t0
+	beq	$t1, $zero, checkWallCheckDownRight
+	add	$t0, $zero, $v0
+	printString("\n UR: ")	
+	printInt($t0)			
+
+checkWallCheckDownRight:
+	add 	$s1, $s1,	6 		# tPosY=animatedSprite.posY + 6;
+	jal 	checkWallMain
+	
+	sgt	$t1, $v0, $t0
+	beq	$t1, $zero, checkWallCheckDownbLeft
+	add	$t0, $zero, $v0
+	printString("\n DR: ")	
+	printInt($t0)		
+
+checkWallCheckDownbLeft:
+	add	$s0, $s0, -6 		# tPosX=animatedSprite.posX - 6;
+	jal 	checkWallMain
+	
+	sgt	$t1, $v0, $t0
+	beq	$t1, $zero, checkWallEnd
+	add	$t0, $zero, $v0
+	printString("\n DL: ")	
+	printInt($t0)		
+	
+	j	checkWallEnd
+	
+checkWallMain:	
+
+	add $t2, $s0, $s2		# tPosX += animatedSprite.movX;
+	add $t3, $s1, $s3		# tPosY += animatedSprite.movY;
+	
+	div $t2, $t2, X_SCALE	# tPosX /= 7;
+	div $t3, $t3, Y_SCALE	# tPosY /= 7;
+	
+	mul	$t3, $t3, GRID_COLS	# tPosY *= 35;
+	add	$t2, $t2, $t3		# tPosX += tPosY;
+	
+	add	$t2, $t2,	$s4		# (tPosX + tPosY) += &grid 
+	lb	$v0, ($t2)		# v0 = grid[tPosX][tPosY];	
+	jr 	$ra				# return	
+	
+checkWallEnd:
+	add	$v0, $zero, $t0
+	lw 	$ra, 0($sp)
+	lw 	$s0, 4($sp)
+	lw 	$s1, 8($sp)
+	lw 	$s2, 12($sp)
+	lw 	$s3, 16($sp)
+	lw 	$s4, 20($sp)
+	addi $sp, $sp, 24
+	jr 	$ra				# return		
+
+#############################################################################################################
+
+#############################################################################################################    
+
+.globl returnNextId
+ returnNextId:		# int ID returnNextId(X,Y, *gride)
+	addi $sp, $sp, -24
+	sw 	$ra, 0($sp)
+	sw 	$s0, 4($sp)
+	sw 	$s1, 8($sp)
+	sw 	$s2, 12($sp)
+	sw 	$s3, 16($sp)
+	sw 	$s4, 20($sp)
+	
+#animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
+#		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16	
+	lw	$s0, 4($a0) 	# s0 = animatedSprite.posX;
+	lw	$s1, 8($a0) 	# s1 = animatedSprite.posY;
+	lw	$s2, 12($a0)	# s2 = animatedSprite.movX;
+	lw	$s3, 16($a0)	# s3 = animatedSprite.movY;
+	la 	$s4,	grid
+	
+	beq 	$s2, -1, returnNextIdIfPosX	# animatedSprite.movX == -1 ? goto returnNextIdIfPosX;
+	beq 	$s3, -1, returnNextIdIfPosY	# animatedSprite.movY == -1 ? goto returnNextIdIfPosY;
+	b returnNextIdElse
+
+returnNextIdIfPosX:
+	add $s0, $s0, 6 		# tPosX=animatedSprite.posX + 6;
+	b returnNextIdElse
+	
+returnNextIdIfPosY:
+	add $s1, $s1, 6		# tPosY=animatedSprite.posY + 6;
+	b returnNextIdElse
+
+returnNextIdElse:	
+	div $s0, $s0, X_SCALE	# tPosX /= 7;
+	div $s1, $s1, Y_SCALE	# tPosY /= 7;
+	
+	add $s0, $s0, $s2		# tPosX += animatedSprite.movX;
+	add $s1, $s1, $s3		# tPosY += animatedSprite.movY;
+	
+	mul	$s1, $s1, GRID_COLS	# tPosY *= 35;
+	add	$s0, $s0, $s1		# tPosX += tPosY;
+	
+	add	$s4, $s0,	$s4			# tPosX += &grid 
+	lb	$v0, ($s4)			# v0 = grid[tPosX][tPosY];	
+
+	lw 	$ra, 0($sp)
+	lw 	$s0, 4($sp)
+	lw 	$s1, 8($sp)
+	lw 	$s2, 12($sp)
+	lw 	$s3, 16($sp)
+	lw 	$s4, 20($sp)
+	addi $sp, $sp, 24	
+	jr 	$ra				# return
+	
+#############################################################################################################
+
 #############################################################################################################    
 
 drawGridHardCoded:		# void drawGrid(byte *grid)
@@ -131,73 +318,10 @@ drawGridCols:
 	
 drawGridEnd:	
 	jr $ra
+	
 #############################################################################################################    
 
-#############################################################################################################
-
-.globl drawSprite
-drawSprite:				# void drawSprite(struct animetedSprite)	
-	
-	addi $sp, $sp, -40		#sp = &sp -40
-	sw 	$ra, 36($sp)		#sp[9] = ra
-	sw 	$s0, 16($sp)		#sp[4] = s0
-	sw 	$s1, 20($sp)		#sp[5] = s1
-	sw 	$s2, 24($sp)		#sp[6] = s2
- 	sw 	$s3, 28($sp)		#sp[7] = s3
-	sw 	$s4, 32($sp)		#sp[8] = s4
-
-	##################### a0 = &pacman			# sprite.name
-	lw 	$s0, 0($a0)	# s0 = pacman[0]		# sprite.id
-	lw 	$s1, 4($a0)	# s1 = pacman[1]		# sprite.posX
-	lw 	$s2, 8($a0)	# s2 = pacman[2]		# sprite.posY
-	la 	$s3, sprites 	# s3 = &sprites
-	la 	$s4, colors	# s4 = &colors
-	add 	$s5, $zero, $zero	# s5 = 0
-	
-	mul 	$t0, $s0, SPRITE_SIZE	# t0 = sprite.id * 49
-	add 	$s3, $t0, $s3			# &sprites += sprite.id * 49
-
-drawSpriteLoop:	
-	bge 	$s5, SPRITE_SIZE, drawSpriteEnd	# ((s3 <= 49) ? drawSpriteEnd)
-
-	lb	$t3, ($s3) 		# t3 = *(byte)s2	
-	sll 	$t3, $t3, 2		# t3 = t3 << 2
-	add 	$t3, $t3, $s4		# t3 += s4
-	lw  	$a2, ($t3)		# a2 = *(uint32_t*)t3
-	div 	$t5, $s5, 7 		#t5 y
-	mfhi $t6 				#t6 X
-	add 	$a0, $s1, $t6		#a0 = s0 + t6
-	add 	$a1, $s2, $t5		#a1 = s1 + t5
-	
-	#printString ("\n LOAD BYTE value")
-	#printInt ($t3)
-	
-	###########################################
-	#jal 	drawPixel
-	
-   	la  	$t0, FB_PTR
-   	mul 	$a1, $a1, FB_XRES 	#(I*LINHAS)+J)*4 + adress
-   	add 	$a0, $a0, $a1		# a0 += a1
-   	sll 	$a0, $a0, 2		# a0 = a0 << 2
-   	add 	$a0, $a0, $t0		# a0 += t0
-   	sw  	$a2, ($a0)		# uint32_t *a0 = a2 ?
-   	###########################################
-   	
-   	addi $s3, $s3, 1		# s2 = 1;
-	addi $s5, $s5, 1 		# s3 = 1;
-	b 	drawSpriteLoop
-	
-drawSpriteEnd:
-	lw 	$ra, 36($sp)		# ra = sp[9]
-	lw 	$s0, 16($sp)		# s0 = sp[4]
-	lw 	$s1, 20($sp)		# s1 = sp[5]
-	lw 	$s2, 24($sp)		# s2 = sp[6]
- 	lw 	$s3, 28($sp)		# s3 = sp[7]
- 	lw 	$s4, 32($sp)		# s4 = sp[8]
-	addi	$sp, $sp, 40		# sp = sp + 40
-    	jr  	$ra				# return
-#############################################################################################################	
-
+#############################################################################################################    
 # drawPixel(X, Y, color)
 .globl drawPixel
 drawPixel:
@@ -208,7 +332,11 @@ drawPixel:
    	add 	$a0, $a0, $t0		# a0 += t0
    	sw  	$a2, ($a0)		# uint32_t *a0 = a2 ?
    	jr  	$ra				# return
-   	
+ 	
+#############################################################################################################
+
+#############################################################################################################    
+
 .globl stopSprite
 stopSprite:
  	sw 	$zero, 12($a0)
@@ -217,54 +345,9 @@ stopSprite:
  	
  	#move_sprite(*struct,mov_x, mov_y)
 
-.globl applyMovement
-applyMovement:
- 	addi $sp, $sp, -64
-	sw 	$ra, 20($sp)
-	sw 	$s0, 16($sp)
-	
-	move $s0, $a0
- 
- 	lw 	$t0, 4($s0)
- 	lw 	$t1, 8($s0)
- 	lw 	$t2, 12($s0)
-	lw 	$t3, 16($s0)
-	add 	$t0, $t0, $t2
-	add 	$t1, $t1, $t3
-	move $a0, $t0
-	move $a1, $t1
-	la 	$a2, grid
-	####################################### testing returned values by returnNextId
-	sw 	$a0, 24($sp)
-	sw 	$a1, 28($sp)
-	sw 	$a2, 24($sp)
-	sw 	$a3, 28($sp)
-	sw 	$v0, 28($sp)
-	#jal checkWall
-	la 	$a0, pacman
-	la 	$a1, grid
-	jal	returnNextId
-	#printString("\n V0: ")	
-	#printInt($v0)
-	lw 	$a0, 24($sp)
-	lw 	$a1, 28($sp)
-	lw 	$a2, 24($sp)
-	lw 	$a3, 28($sp)
-	lw 	$v0, 28($sp)
-	#######################################
-	bnez $v0, applyMovementStop
-	sw 	$t0, 4($s0)
-	sw 	$t1, 8($s0)
-	b 	applyMovementEnd
-applyMovementStop:
-	jal 	stopSprite
-applyMovementEnd:
-	lw 	$ra, 20($sp)
-	lw 	$s0, 16($sp)
-	addi $sp, $sp, 64
-	jr 	$ra
 #############################################################################################################
 
+#############################################################################################################    
 
  .globl returnId
  returnId:		 	# (X,Y, *gride)
@@ -290,80 +373,118 @@ applyMovementEnd:
 	lw 	$s0, 20($sp)
 	addi $sp, $sp, 32	# sp = &sp + 32
 	jr 	$ra			# Return
+	
 #############################################################################################################
 
-.globl returnNextId
- returnNextId:		# int ID returnNextId(X,Y, *gride)
-	addi $sp, $sp, -24
-	sw 	$ra, 0($sp)
-	sw 	$s0, 4($sp)
-	sw 	$s1, 8($sp)
-	sw 	$s2, 12($sp)
-	sw 	$s3, 16($sp)
-	
-#animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
-#		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16	
-	lw	$s0, 4($a0) 	# s0 = animatedSprite.posX;
-	lw	$s1, 8($a0) 	# s1 = animatedSprite.posY;
-	lw	$s2, 12($a0)	# s2 = animatedSprite.movX;
-	lw	$s3, 16($a0)	# s3 = animatedSprite.movY;
-	
-	beq 	$s2, -1, returnNextIdIfPosX	# animatedSprite.movX == -1 ? goto returnNextIdIfPosX;
-	beq 	$s3, -1, returnNextIdIfPosY	# animatedSprite.movY == -1 ? goto returnNextIdIfPosY;
-	b returnNextIdElse
-
-returnNextIdIfPosX:
-	add $s0, $s0, 6 		# tPosX=animatedSprite.posX + 6;
-	b returnNextIdElse
-	
-returnNextIdIfPosY:
-	add $s1, $s1, 6		# tPosY=animatedSprite.posY + 6;
-	b returnNextIdElse
-
-returnNextIdElse:	
-	div $s0, $s0, X_SCALE	# tPosX /= 7;
-	div $s1, $s1, Y_SCALE	# tPosY /= 7;
-	
-	add $s0, $s0, $s2		# tPosX += animatedSprite.movX;
-	add $s1, $s1, $s3		# tPosY += animatedSprite.movY;
-	
-	mul $s1, $s1, GRID_COLS	# tPosY *= 35;
-	add $s0, $s0, $s1		# tPosX += tPosY;
-
-	
-	add $a0, $s0, $a1		# tPosX += &grid 
-	lb $v0, ($a0)			# v0 = grid[tPosX][tPosY];	
-
-	lw 	$ra, 0($sp)
-	lw 	$s0, 4($sp)
-	lw 	$s1, 8($sp)
-	lw 	$s2, 12($sp)
-	lw 	$s3, 16($sp)
-	addi $sp, $sp, 24	
-	jr 	$ra				# return
-#############################################################################################################
+#############################################################################################################    
 
 # (X,Y, *gride)
-.globl checkWall 
-checkWall:
-	addi $sp, $sp, -24
-	sw $ra, 16($sp)
+#.globl checkWall 
+#checkWall:
+#	addi $sp, $sp, -24
+#	sw $ra, 16($sp)
+#	
+#	jal returnId
+#	bge $v0, 5, checkWallTrue
+#	#li $v0, 0
+#	add $v0, $zero, $zero
+#	b checkWallEnd
 	
-	jal returnId
-	bge $v0, 5, checkWallTrue
-	#li $v0, 0
-	add $v0, $zero, $zero
-	b checkWallEnd
+#checkWallTrue:
+#	#li $v0, 1
+#	add $v0, $zero, 1
 	
-checkWallTrue:
-	#li $v0, 1
-	add $v0, $zero, 1
-	
-checkWallEnd: 	
- 	lw $ra, 16($sp)
-	addi $sp, $sp, 24
-	jr $ra
+#checkWallEnd: 	
+ #	lw $ra, 16($sp)
+#	addi $sp, $sp, 24
+#	jr $ra
 #############################################################################################################
+
+#############################################################################################################    
+
+.globl drawSprite
+drawSprite:				# void drawSprite(struct animetedSprite)	
+	
+	addi $sp, $sp, -64		#allocate 8 bytes on stack
+	sw 	$ra, 12($sp)
+	sw 	$s0, 16($sp)
+	sw 	$s1, 20($sp)
+	sw 	$s2, 24($sp)
+ 	sw 	$s3, 28($sp)
+	sw 	$s4, 32($sp)
+	sw 	$s5, 36($sp)
+	sw 	$s6, 40($sp)
+	sw 	$s7, 44($sp)
+	
+	##################### a0 = &pacman			# sprite.name
+	lw 	$s0, 0($a0)	# s0 = pacman[0]		# sprite.id
+	lw 	$s1, 4($a0)	# s1 = pacman[1]		# sprite.posX
+	lw 	$s2, 8($a0)	# s2 = pacman[2]		# sprite.posY 
+	la 	$s3, sprites 	# s3 = &sprites
+	la 	$s4, colors	# s4 = &colors
+	add 	$s5, $zero, $zero	# s5 = 0
+	la	$s6, FB_PTR	# Dysplay adress
+	add 	$s7, $zero, $zero	# s7 = 0
+	
+	mul	$s1,	$s1, 4 #256 * 4
+	add 	$s6,	$s6,	$s1
+	mul	$s2,	$s2, 1024 #256 * 4
+	add 	$s6,	$s6,	$s2
+	
+	mul 	$t0, $s0, SPRITE_SIZE	# t0 = sprite.id * 49
+	add 	$s3, $t0, $s3			# &sprites += sprite.id * 49
+
+drawSpritePixelX:	
+	bge 	$s5, X_SCALE, drawSpritePixelY	# ((s3 <= 49) ? drawSpriteEnd)
+	addi	$s5, $s5, 1
+
+	lb 	$t2, ($s3)
+	addi	$s3, $s3, 1	# &sprite++
+	sll	$t2, $t2, 2	# color id * 4
+	add	$t2, $t2, $s4 	# color id += &color 
+	lw 	$t2, ($t2)
+	sw	$t2, ($s6)
+	addi	$s6, $s6, 4
+	# compensate display pointer adress to draw the next pixel
+	b drawSpritePixelX
+		
+drawSpritePixelY:
+	bge  $s7, Y_SCALE, drawSpriteEnd	# ((t => 7) ? goto drawGridDrawPixelXEnd()	
+	addi	$s7, $s7, 1	
+	add	$s5, $zero, $zero
+	addi	$s6, $s6, 996 # s2 += (256-7)*4 
+	# compensate display pointer adress to draw the next pixel line
+	b drawSpritePixelX
+	
+drawSpriteEnd:
+	lw 	$ra, 12($sp)
+	lw 	$s0, 16($sp)
+	lw 	$s1, 20($sp)
+	lw 	$s2, 24($sp)
+ 	lw 	$s3, 28($sp)
+	lw 	$s4, 32($sp)
+	lw 	$s5, 36($sp)
+	lw 	$s6, 40($sp)
+	lw 	$s7, 44($sp)
+	addi	$sp, $sp, 64		
+    	jr  	$ra				# return
+    	
+#############################################################################################################	
+
+#############################################################################################################
+ enableProcessorInterrupt: ###### Why this?
+	add 	$t0, $zero, 1	# t0 = 1
+	sll 	$t0, $t0, 8	# t0 = t0 << 8
+	or 	$12, $t0, $12	# $12 = t0 | $12
+	ori 	$12, $12, 1	# $12 = $12 | 1
+	jr   $ra			# return
+
+ enableKeyboardInterrupt:
+	add 	$t0, $zero, 0xffff0002	# t0 = 0xffff0002
+	sw 	$t0, 0xffff0000		# *((uint32_t) 0xffff0000) = t0
+	jr   $ra					# return
+	
+#############################################################################################################    
 
 ############################################################################################################# 	
     	  	  	
@@ -426,9 +547,9 @@ checkWallEnd:
 case0:
 	printStringAdress(stringHWInterruptEx)
 	
-	#mfc0	$s0, $14
-	#addi	$s0, $s0, -4
-	#mtc0	$s0, $14
+	mfc0	$s0, $14
+	addi	$s0, $s0, -4
+	mtc0	$s0, $14
     
 	la 	$s1, 0xffff0000  	#Load keyboard info on $s1 to the right address
 	lw 	$s2, 4($s1)		#Carregando dados lidos pelo teclado

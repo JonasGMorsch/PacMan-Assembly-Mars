@@ -9,6 +9,22 @@
     syscall
 .end_macro
 
+.macro DelayMs (%x)
+	addi $sp, $sp, -8
+	sw 	$a0, 0($sp)
+	sw 	$v0, 4($sp)
+
+	add 	$a0, $zero, %x
+	li 	$v0, 32
+	syscall
+	
+	lw 	$a0, 0($sp)
+	lw 	$v0, 4($sp)
+	addi $sp, $sp, 8
+.end_macro
+
+
+
 .macro printString (%str)
 .data 
 mStr: .asciiz %str
