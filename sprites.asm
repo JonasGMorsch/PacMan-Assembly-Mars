@@ -1,6 +1,6 @@
 .include "graphics.asm"
 .include "macros.asm"
-#.include "control.asm"
+.include "control.asm"
 
 #.include ".asm"
 #.data 
@@ -21,7 +21,7 @@
 	#printInt($v0)
 	#EndProgram
 #############################################################################################################    
-
+startGame:
 	#CHAMA DRAW GRID
 	jal 	drawGridHardCoded   			# void drawGridLinear(void)
 	#EndProgram
@@ -29,19 +29,21 @@
 	jal 	enableKeyboardInterrupt	# void enableKeyboardInterrupt()
     	
 #SysLock # While(1); Usefull to test imterrupts
-
+	b main
 #############################################################################################################    
 main:
 
-	la 	$a0, pacman	# s0 = &pacman			# name
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
-	#EndProgram
-	#la 	$a0, pacman	# a0 = &pacman
-	#la 	$a1, kbBuffer	# a0 = &pacman
-	#jal	movePacMan
+	#la	$a0, pacman	# a0 = &pacman
+	#jal	drawSprite	# void drawSprite(struct animetedSprite)
+	#jal	moveSprite	# void enableMovement(a0)	
+
 	la 	$a0, pacman	# a0 = &pacman
-	jal 	moveSprite	# void enableMovement(a0)
-	
+	la	$a1, kbBuffer	
+	jal 	drawSprite	# void drawSprite(struct animetedSprite)
+	#la 	$a0, pacman	# a0 = &pacman
+	jal	movePacMan
+
+	#EndProgram
 	
 	la 	$a0, ghost0	# s0 = &ghost0
 	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
@@ -54,7 +56,7 @@ main:
 	
 	la 	$a0, ghost3	# s0 = &ghost3
 	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
-	DelayMs(10)
+	DelayMs(20)
 	#DelayMs(500)
    	b 	main			# goto main
 #############################################################################################################    
@@ -74,78 +76,60 @@ movePacMan:
 	sw 	$s6, 40($sp)
 	sw 	$s7, 44($sp)
 	
-	##################### a0 = &sprite			
-	lw 	$s0, 0($a0)	# sprite.id
+	##################### a0 = &sprite	
+	move	$s0, $a1	# s0 = &kbBuffer	
+		
 	lw 	$s1, 4($a0)	# sprite.posX
 	lw 	$s2, 8($a0)	# sprite.posY 
  	lw 	$s3, 12($a0)	# sprite.movX 
 	lw 	$s4, 16($a0)	# sprite.movY 
 	
-	#la	$a1, kbBuffer	
-	lw 	$s5, 0($a1)	# kbBuffer.X
-	lw 	$s6, 4($a1)	# kbBuffer.Y
+	lw 	$s5, 0($s0)	# kbBuffer.isValid
+	lw 	$s6, 4($s0)	# kbBuffer.X
+	lw 	$s7, 8($s0)	# kbBuffer.Y
 	
-	printString("\n kbBuffer.X: ")	
-	printInt($s5)
-	printString("\n kbBuffer.Y: ")	
-	printInt($s6)
-	
-#kbBuffercheckX:	
-	bne 	$s3, $s5, kbBufferXIsDiferent
-	add $s5, $zero, $zero	# kbBuffer.X = 0
-	
-kbBuffercheckY:
-	bne 	$s4, $s6, kbBufferYIsDiferent
-	add $s6, $zero, $zero	# kbBuffer.Y = 0
-	b	kbBufferDone
-	
-kbBufferXIsDiferent:
-	printString("\n HereX!")
-	jal	checkWall
-	bge	$v0,	69,	kbBuffercheckY	# (returnNextId(struct sprite) > 69) ? goto movePacManEnd
-	add $s3, $zero, $s5			# sprite.movX = kbBuffer.X;
-	add $s4, $zero, $zero		# sprite.movY = 0;
-	add $s5, $zero, $zero		# kbBuffer.X = 0;
-	b	kbBuffercheckY
+movePacManKbBufferIsValid:	
+	beq	$s5, $zero, movePacManKbBufferIsNotValid	# (kbBuffer.isValid == 0) ? kbBufferIsNotValid
+	move	$a1, $s6 						# a1 = kbBuffer.X
+	move $a2, $s7						# a2 = kbBuffer.Y
+	jal	checkWall						# always (x,0) or (0,y) being x|y -> (int)(-1 to 1)
+	bge	$v0,	69, movePacManKbBufferIsNotValid		# (returnNextId(struct sprite) > 69) ? goto movePacManEnd
+	add 	$s3, $zero, $s6				# sprite.movX = kbBuffer.X;
+	add 	$s4, $zero, $s7				# sprite.movY = kbBuffer.Y;
+	add	$s5, $zero, $zero				# kbBuffer.isValid = 0;
+	b	movePacManDoTheThing			# if input data is valid
 
-kbBufferYIsDiferent:
-	printString("\n HereY!")
-	jal	checkWall
-	bge	$v0,	69,	kbBufferDone	# (returnNextId(struct sprite) > 69) ? goto movePacManEnd
+movePacManKbBufferIsNotValid:	
+	move	$a1, $s3						# a1 = sprite.movX
+	move $a2, $s4						# a2 = sprite.movY
+	jal	checkWall						# always (x,0) or (0,y) being x|y -> (int)(-1 to 1)
+	bge	$v0,	69, movePacManStopIt			# (returnNextId(struct sprite) > 69) ? goto movePacManEnd
 
-	add $s4, $zero, $s6			# sprite.movY = kbBuffer.Y;
-	add $s3, $zero, $zero		# sprite.movX = 0;
-	add $s6, $zero, $zero		# kbBuffer.Y = 0;
-	#b	kbBufferDone
+movePacManDoTheThing:
+	add 	$s1, $s1, $s3			# sprite.posX += sprite.movX
+	add 	$s2, $s2, $s4			# sprite.posY += sprite.movY
+	b 	movePacManEnd
 	
-kbBufferDone:
-	#Need to reload cause the stored values might be diferent
-	#lw 	$s3, 12($a0)	# sprite.movX 
-	#lw 	$s4, 16($a0)	# sprite.movY 
+movePacManStopIt:		
+	add	$s3, $zero, $zero				# sprite.movX = 0;
+	add	$s4, $zero, $zero		
 	
-	bne	$s3, $zero, movePacManIsNotZero # (!s1) ? goto movePacManNonZero
-	beq	$s4, $zero, movePacManEnd	# (s2) ? goto movePacManEnd
-	#b	movePacManEnd
-	
-movePacManIsNotZero:	
-
-	add 	$s1, $s1, $s3
-	add 	$s2, $s2, $s4
-	
-	#la 	$a0, pacman
-	
-	sw 	$s1, 4($a0)	# sprite.posX
-	sw 	$s2, 8($a0)	# sprite.posY 
-	
-	#b	movePacManEnd
-
 movePacManEnd:
 
+	sw 	$s1, 4($a0)	# save sprite.posX
+	sw 	$s2, 8($a0)	# save sprite.posY
+	sw 	$s3, 12($a0)	# save sprite.movX
+	sw 	$s4, 16($a0)	# save sprite.movY
+	#la	$a1, kbBuffer	
+	sw 	$s5, 0($s0)	# save kbBuffer.isValid
+	sw 	$s6, 4($s0)	# save kbBuffer.X
+	sw 	$s7, 8($s0)	# save kbBuffer.Y
+	
 #Saving here, because the stored values might differ
- 	sw 	$s3, 12($a0)	# sprite.movX 
-	sw 	$s4, 16($a0)	# sprite.movY 
-	sw 	$s5, 0($a1)	# kbBuffer.X
-	sw 	$s6, 4($a1)	# kbBuffer.Y
+ 	#sw 	$s3, 12($a0)	# sprite.movX 
+	#sw 	$s4, 16($a0)	# sprite.movY 
+	#sw 	$s5, 0($a1)	# kbBuffer.X
+	#sw 	$s6, 4($a1)	# kbBuffer.Y
 
 	lw 	$ra, 12($sp)
 	lw 	$s0, 16($sp)
@@ -193,10 +177,14 @@ moveSpriteCheckWallX:
 	move	$a2, $zero	# a2 = 0;
 	jal	checkWall
 	bge	$v0,	69,	moveSpriteCheckWallY	# (returnNextId(struct sprite) > 69) ? goto moveSpriteEnd
-	add 	$s1, $s1, $s3
+	add 	$s1, $s1, $s3	# sprite.posX += sprite.movX
 	sw 	$s1, 4($a0)	# sprite.posX
-	#printString("\n ID: ")
-	#printInt($v0)
+	
+	#li 	$s3, 0	# sprite.movX = 0
+	#sw 	$s3, 12($a0)	# sprite.movX 
+	#li 	$s4, 0	# sprite.movY = 0
+	#sw 	$s4, 16($a0)	# sprite.movY 
+	
 moveSpriteCheckWallY:
 
 	move	$a1, $zero	# a1 = 0;
@@ -205,9 +193,15 @@ moveSpriteCheckWallY:
 	bge	$v0,	69,	moveSpriteEnd	# (returnNextId(struct sprite) > 69) ? goto moveSpriteEnd
 	add 	$s2, $s2, $s4
 	sw 	$s2, 8($a0)	# sprite.posY 
-	#ble 	$v0,	83,	moveSpriteEnd
 	
+	#li 	$s4, 0	# sprite.movY = 0
+	#sw 	$s4, 16($a0)	# sprite.movY 
+	
+	#li 	$s3, 0	# sprite.movX = 0
+	#sw 	$s3, 12($a0)	# sprite.movX 
+
 moveSpriteEnd:
+
 	lw 	$ra, 12($sp)
 	lw 	$s0, 16($sp)
 	lw 	$s1, 20($sp)
@@ -225,13 +219,18 @@ moveSpriteEnd:
 #############################################################################################################
 .globl checkWall
  checkWall:		# (int grid.id)checkWall(&grid, movX , movY )
-	addi $sp, $sp, -24
+	addi $sp, $sp, -64
 	sw 	$ra, 0($sp)
 	sw 	$s0, 4($sp)
 	sw 	$s1, 8($sp)
 	sw 	$s2, 12($sp)
 	sw 	$s3, 16($sp)
 	sw 	$s4, 20($sp)
+	
+	sw 	$a0, 48($sp)
+	sw 	$a1, 52($sp)
+	sw 	$a2, 56($sp)
+	sw 	$a3, 60($sp)
 	
 #animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
 #		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16	
@@ -304,7 +303,13 @@ checkWallEnd:
 	lw 	$s2, 12($sp)
 	lw 	$s3, 16($sp)
 	lw 	$s4, 20($sp)
-	addi $sp, $sp, 24
+	
+	lw 	$a0, 48($sp)
+	lw 	$a1, 52($sp)
+	lw 	$a2, 56($sp)
+	lw 	$a3, 60($sp)
+	
+	addi $sp, $sp, 64
 	jr 	$ra				# return		
 
 #############################################################################################################
@@ -525,6 +530,13 @@ drawSprite:				# void drawSprite(struct animetedSprite)
 	sw 	$s6, 40($sp)
 	sw 	$s7, 44($sp)
 	
+	sw 	$a0, 48($sp)
+	sw 	$a1, 52($sp)
+	sw 	$a2, 56($sp)
+	sw 	$a3, 60($sp)
+	
+	
+	
 	##################### a0 = &pacman			# sprite.name
 	lw 	$s0, 0($a0)	# s0 = pacman[0]		# sprite.id
 	lw 	$s1, 4($a0)	# s1 = pacman[1]		# sprite.posX
@@ -575,6 +587,12 @@ drawSpriteEnd:
 	lw 	$s5, 36($sp)
 	lw 	$s6, 40($sp)
 	lw 	$s7, 44($sp)
+	
+	lw 	$a0, 48($sp)
+	lw 	$a1, 52($sp)
+	lw 	$a2, 56($sp)
+	lw 	$a3, 60($sp)
+	
 	addi	$sp, $sp, 64		
     	jr  	$ra				# return
     	
@@ -658,8 +676,8 @@ case0:
 	la 	$s1, 0xffff0000  	#Load keyboard info on $s1 to the right address
 	lw 	$s2, 4($s1)		#Carregando dados lidos pelo teclado
     
-     la  	$s0, pacman	# Load Sprite adress , Sprite Name
-	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+     #la  	$s0, pacman	# Load Sprite adress , Sprite Name
+	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
 	beq 	$s2,100, hwInterruptGoRight	# Key d, go Right
 	beq 	$s2, 68, hwInterruptGoRight	# Key D, go Right
 	beq 	$s2, 97, hwInterruptGoLeft	# Key a, go Left
@@ -672,34 +690,32 @@ case0:
 	b   	switchCaseBreak
     
 hwInterruptGoRight:
-	li  	$s1, 1	#x
-	#li  	$s2, 0	#y
-	sw 	$s1, 12($s0)
+	li  	$s2, 1	#x
+	li  	$s3, 0	#y
+	#sw 	$s1, 12($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptGoLeft:
-	li  	$s1, -1	#x
-	#li  	$s2, 0	#y
-	sw 	$s1, 12($s0)
+	li  	$s2, -1	#x
+	li  	$s3, 0	#y
+	#sw 	$s1, 12($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptPause:
-	li  	$s1, 0	#x
-	li  	$s2, 0	#y
-	sw 	$s1, 12($s0)
- 	sw 	$s2, 16($s0)
+	li  	$s2, 0	#x
+	li  	$s3, 0	#y
  	b 	hwInterruptEnd
  	
 hwInterruptGoUp:
-	#li  	$s1, 0	#x
-	li  	$s2, -1	#y
- 	sw 	$s2, 16($s0)
+	li  	$s2, 0	#x
+	li  	$s3, -1	#y
+ 	#sw 	$s2, 16($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptGoDown:
-	#li  	$s1, 0	#x
-	li  	$s2, 1	#y
-	sw 	$s2, 16($s0)
+	li  	$s2, 0	#x
+	li  	$s3, 1	#y
+	#sw 	$s2, 16($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptEnd:
@@ -708,8 +724,11 @@ hwInterruptEnd:
  	#sw 	$s2, 16($s0)
  	
  	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
- 	#sw 	$s1, 0($s0) 	
- 	#sw 	$s2, 4($s0)
+ 	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+ 	li	$s1, 1
+ 	sw 	$s1, 0($s0) 	# kbBuffer.isValid = 1;
+ 	sw 	$s2, 4($s0)	# kbBuffer.x = s2;
+ 	sw 	$s3, 8($s0)	# kbBuffer.y = s3;
  	
 	b   	switchCaseBreak
 
