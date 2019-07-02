@@ -1,12 +1,13 @@
 .include "graphics.asm"
 .include "macros.asm"
+#.include "control.asm"
+
 #.include ".asm"
 #.data 
 #stringTest98: .asciiz "test test test \n"
 #.align 2
 
 .text
-
 
 ############################################## *NUCLEAR TEST SITE* ##########################################
 	#la 	$a0, pacman
@@ -35,9 +36,12 @@ main:
 	la 	$a0, pacman	# s0 = &pacman			# name
 	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	#EndProgram
-
+	#la 	$a0, pacman	# a0 = &pacman
+	#la 	$a1, kbBuffer	# a0 = &pacman
+	#jal	movePacMan
 	la 	$a0, pacman	# a0 = &pacman
 	jal 	moveSprite	# void enableMovement(a0)
+	
 	
 	la 	$a0, ghost0	# s0 = &ghost0
 	#jal 	drawSprite	# void drawSprite(struct animetedSprite)	
@@ -54,6 +58,108 @@ main:
 	#DelayMs(500)
    	b 	main			# goto main
 #############################################################################################################    
+
+#########################################################################################################
+
+.globl movePacMan
+movePacMan:
+	addi $sp, $sp, -64		#allocate 8 bytes on stack
+	sw 	$ra, 12($sp)
+	sw 	$s0, 16($sp)
+	sw 	$s1, 20($sp)
+	sw 	$s2, 24($sp)
+ 	sw 	$s3, 28($sp)
+	sw 	$s4, 32($sp)
+	sw 	$s5, 36($sp)
+	sw 	$s6, 40($sp)
+	sw 	$s7, 44($sp)
+	
+	##################### a0 = &sprite			
+	lw 	$s0, 0($a0)	# sprite.id
+	lw 	$s1, 4($a0)	# sprite.posX
+	lw 	$s2, 8($a0)	# sprite.posY 
+ 	lw 	$s3, 12($a0)	# sprite.movX 
+	lw 	$s4, 16($a0)	# sprite.movY 
+	
+	#la	$a1, kbBuffer	
+	lw 	$s5, 0($a1)	# kbBuffer.X
+	lw 	$s6, 4($a1)	# kbBuffer.Y
+	
+	printString("\n kbBuffer.X: ")	
+	printInt($s5)
+	printString("\n kbBuffer.Y: ")	
+	printInt($s6)
+	
+#kbBuffercheckX:	
+	bne 	$s3, $s5, kbBufferXIsDiferent
+	add $s5, $zero, $zero	# kbBuffer.X = 0
+	
+kbBuffercheckY:
+	bne 	$s4, $s6, kbBufferYIsDiferent
+	add $s6, $zero, $zero	# kbBuffer.Y = 0
+	b	kbBufferDone
+	
+kbBufferXIsDiferent:
+	printString("\n HereX!")
+	jal	checkWall
+	bge	$v0,	69,	kbBuffercheckY	# (returnNextId(struct sprite) > 69) ? goto movePacManEnd
+	add $s3, $zero, $s5			# sprite.movX = kbBuffer.X;
+	add $s4, $zero, $zero		# sprite.movY = 0;
+	add $s5, $zero, $zero		# kbBuffer.X = 0;
+	b	kbBuffercheckY
+
+kbBufferYIsDiferent:
+	printString("\n HereY!")
+	jal	checkWall
+	bge	$v0,	69,	kbBufferDone	# (returnNextId(struct sprite) > 69) ? goto movePacManEnd
+
+	add $s4, $zero, $s6			# sprite.movY = kbBuffer.Y;
+	add $s3, $zero, $zero		# sprite.movX = 0;
+	add $s6, $zero, $zero		# kbBuffer.Y = 0;
+	#b	kbBufferDone
+	
+kbBufferDone:
+	#Need to reload cause the stored values might be diferent
+	#lw 	$s3, 12($a0)	# sprite.movX 
+	#lw 	$s4, 16($a0)	# sprite.movY 
+	
+	bne	$s3, $zero, movePacManIsNotZero # (!s1) ? goto movePacManNonZero
+	beq	$s4, $zero, movePacManEnd	# (s2) ? goto movePacManEnd
+	#b	movePacManEnd
+	
+movePacManIsNotZero:	
+
+	add 	$s1, $s1, $s3
+	add 	$s2, $s2, $s4
+	
+	#la 	$a0, pacman
+	
+	sw 	$s1, 4($a0)	# sprite.posX
+	sw 	$s2, 8($a0)	# sprite.posY 
+	
+	#b	movePacManEnd
+
+movePacManEnd:
+
+#Saving here, because the stored values might differ
+ 	sw 	$s3, 12($a0)	# sprite.movX 
+	sw 	$s4, 16($a0)	# sprite.movY 
+	sw 	$s5, 0($a1)	# kbBuffer.X
+	sw 	$s6, 4($a1)	# kbBuffer.Y
+
+	lw 	$ra, 12($sp)
+	lw 	$s0, 16($sp)
+	lw 	$s1, 20($sp)
+	lw 	$s2, 24($sp)
+ 	lw 	$s3, 28($sp)
+	lw 	$s4, 32($sp)
+	lw 	$s5, 36($sp)
+	lw 	$s6, 40($sp)
+	lw 	$s7, 44($sp)
+	addi	$sp, $sp, 64		
+    	jr  	$ra				# return
+	
+#############################################################################################################
 
 #########################################################################################################
 
@@ -77,29 +183,30 @@ moveSprite:
  	lw 	$s3, 12($a0)	# sprite.movX 
 	lw 	$s4, 16($a0)	# sprite.movY 
 	
-	#jal	returnNextId
+	bne	$s3, $zero, moveSpriteCheckWallX 	# (!s1) ? goto moveSpriteCheckWallX
+	bne	$s4, $zero, moveSpriteCheckWallY	# (!s2) ? goto moveSpriteCheckWallY
+	b	moveSpriteEnd
+	
+moveSpriteCheckWallX:
+
+	move	$a1, $s3 		# a1 = animatedSprite.movX;
+	move	$a2, $zero	# a2 = 0;
 	jal	checkWall
+	bge	$v0,	69,	moveSpriteCheckWallY	# (returnNextId(struct sprite) > 69) ? goto moveSpriteEnd
+	add 	$s1, $s1, $s3
+	sw 	$s1, 4($a0)	# sprite.posX
 	#printString("\n ID: ")
 	#printInt($v0)
+moveSpriteCheckWallY:
+
+	move	$a1, $zero	# a1 = 0;
+	move	$a2, $s4		# a2 = animatedSprite.movY;
+	jal	checkWall
 	bge	$v0,	69,	moveSpriteEnd	# (returnNextId(struct sprite) > 69) ? goto moveSpriteEnd
+	add 	$s2, $s2, $s4
+	sw 	$s2, 8($a0)	# sprite.posY 
 	#ble 	$v0,	83,	moveSpriteEnd
 	
-	bne	$s3, $zero, moveSpriteIsNotZero # (!s1) ? goto moveSpriteNonZero
-	beq	$s4, $zero, moveSpriteEnd	# (s2) ? goto moveSpriteEnd
-	#b	moveSpriteEnd
-	
-moveSpriteIsNotZero:	
-
-	add 	$s1, $s1, $s3
-	add 	$s2, $s2, $s4
-	
-	#la 	$a0, pacman
-	
-	sw 	$s1, 4($a0)	# sprite.posX
-	sw 	$s2, 8($a0)	# sprite.posY 
-	
-	#b	moveSpriteEnd
-
 moveSpriteEnd:
 	lw 	$ra, 12($sp)
 	lw 	$s0, 16($sp)
@@ -117,7 +224,7 @@ moveSpriteEnd:
 
 #############################################################################################################
 .globl checkWall
- checkWall:		# int ID checkWall(X,Y, *gride)
+ checkWall:		# (int grid.id)checkWall(&grid, movX , movY )
 	addi $sp, $sp, -24
 	sw 	$ra, 0($sp)
 	sw 	$s0, 4($sp)
@@ -130,8 +237,10 @@ moveSpriteEnd:
 #		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16	
 	lw	$s0, 4($a0) 	# s0 = animatedSprite.posX;
 	lw	$s1, 8($a0) 	# s1 = animatedSprite.posY;
-	lw	$s2, 12($a0)	# s2 = animatedSprite.movX;
-	lw	$s3, 16($a0)	# s3 = animatedSprite.movY;
+	#lw	$s2, 12($a0)	# s2 = animatedSprite.movX;
+	#lw	$s3, 16($a0)	# s3 = animatedSprite.movY;
+	move	$s2, $a1		# s2 = animatedSprite.movX;
+	move	$s3, $a2		# s3 = animatedSprite.movY;
 	la 	$s4,	grid
 
 checkWallCheckUpLeft:
@@ -531,13 +640,8 @@ drawSpriteEnd:
   	printStringAdress(stringGenericEx)
 	
   	mfc0	$s0, $13
-  	#andi	$s1,$s0,0XFC
-  	#printString("\n s1: ")	
-	#printInt($s1)
-	
 	andi	$s0,$s0,0xFC  #00x7C
-	#printString("\n s0: ")	
-	printInt($s0)
+
 
   	la 	$s1, jtable	#load andress of vector
   	add 	$s1, $s1, $s0 	# jtable adress
@@ -554,6 +658,8 @@ case0:
 	la 	$s1, 0xffff0000  	#Load keyboard info on $s1 to the right address
 	lw 	$s2, 4($s1)		#Carregando dados lidos pelo teclado
     
+     la  	$s0, pacman	# Load Sprite adress , Sprite Name
+	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
 	beq 	$s2,100, hwInterruptGoRight	# Key d, go Right
 	beq 	$s2, 68, hwInterruptGoRight	# Key D, go Right
 	beq 	$s2, 97, hwInterruptGoLeft	# Key a, go Left
@@ -567,33 +673,44 @@ case0:
     
 hwInterruptGoRight:
 	li  	$s1, 1	#x
-	li  	$s2, 0	#y
+	#li  	$s2, 0	#y
+	sw 	$s1, 12($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptGoLeft:
 	li  	$s1, -1	#x
-	li  	$s2, 0	#y
+	#li  	$s2, 0	#y
+	sw 	$s1, 12($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptPause:
 	li  	$s1, 0	#x
 	li  	$s2, 0	#y
+	sw 	$s1, 12($s0)
+ 	sw 	$s2, 16($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptGoUp:
-	li  	$s1, 0	#x
+	#li  	$s1, 0	#x
 	li  	$s2, -1	#y
+ 	sw 	$s2, 16($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptGoDown:
-	li  	$s1, 0	#x
+	#li  	$s1, 0	#x
 	li  	$s2, 1	#y
+	sw 	$s2, 16($s0)
  	b 	hwInterruptEnd
  	
 hwInterruptEnd:
-    	la  	$s0, pacman	# Load Sprite adress , Sprite Name
- 	sw 	$s1, 12($s0) #MOVE SPRITE
- 	sw 	$s2, 16($s0)
+    	#la  	$s0, pacman	# Load Sprite adress , Sprite Name
+ 	#sw 	$s1, 12($s0) 	#MOVE SPRITE
+ 	#sw 	$s2, 16($s0)
+ 	
+ 	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+ 	#sw 	$s1, 0($s0) 	
+ 	#sw 	$s2, 4($s0)
+ 	
 	b   	switchCaseBreak
 
 case4:
@@ -682,7 +799,7 @@ switchCaseBreak:
 jtable: .word case0, case1, case2, case3, case4, case5, case6, case7, case8, case9, case10, case11, case12, case13, case14, case15, default
 
 # Excepion String Table
-stringGenericEx: 	.asciiz "Exception Occurred: "
+stringGenericEx: 	.asciiz "\n Exception Occurred: "
 stringHWInterruptEx:	.asciiz "HW Interrupt\n"	  
 stringLoadErrorEx: 	.asciiz "Address Error caused by load or instruction fetch\n"
 stringStoreErrorEx: 	.asciiz "Address Error caused by store instruction\n"
