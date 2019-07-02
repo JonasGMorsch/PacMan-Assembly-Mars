@@ -11,6 +11,7 @@
 .eqv GRID_COLS 35       
 .eqv GRID_ID_OFFSET -64
 
+.eqv NUMBER_OF_GHOSTS 6
 
 .macro animatedSprite (%name, %id, %posX, %posY, %movX, %movY)
 #		 	ofset:	&  ,  0 ,    4 ,    8 ,   12 ,   16
@@ -29,6 +30,10 @@
 	animatedSprite(ghost1, 2, 105, 119, 0, 0)
 	animatedSprite(ghost2, 2, 133, 105, 0, 0)
 	animatedSprite(ghost3, 2, 133, 119, 0, 0)
+	
+	animatedSprite(ghost4, 2, 112, 112, 0, 0)
+	animatedSprite(ghost5, 2, 126, 112, 0, 0)
+	animatedSprite(null,   0,   0,   0, 0, 0)
   
 .data
 # 35x35 Pacman Arena - Sprites 7x7

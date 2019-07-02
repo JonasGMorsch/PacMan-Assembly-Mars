@@ -11,8 +11,8 @@
 
 moveIntention (kbBuffer, 0, 0 ,0)
 
-moveIntention (ghost0Buffer, 0, 0 ,0)
-moveIntention (ghost1Buffer, 0, 0 ,0)
-moveIntention (ghost2Buffer, 0, 0 ,0)
-moveIntention (ghost3Buffer, 0, 0 ,0)
+#moveIntention (ghost0Buffer, 0, 0 ,0)
+#moveIntention (ghost1Buffer, 0, 0 ,0)
+#moveIntention (ghost2Buffer, 0, 0 ,0)
+#moveIntention (ghost3Buffer, 0, 0 ,0)
 

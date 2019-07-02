@@ -70,3 +70,19 @@ mStr: .asciiz %str
 	addi $sp, $sp, 8
 .end_macro
 
+.macro generateRadomMovement ()
+	addi $sp, $sp, -8
+	sw 	$a0, 0($sp)
+	sw 	$a1, 4($sp)
+
+	li $a1, 3
+	li $v0, 42
+	syscall
+	addi	$a0, $a0, -1
+	move	$v0,	$a0
+	
+	lw 	$a0, 0($sp)
+	lw 	$a1, 4($sp)
+	addi $sp, $sp, 8
+.end_macro
+
