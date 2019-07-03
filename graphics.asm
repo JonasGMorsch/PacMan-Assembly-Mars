@@ -25,7 +25,7 @@
 	.word %movY
 .end_macro
 
-	animatedSprite(pacman, 3, 119, 140, 0, 0)
+	animatedSprite(pacman, 3, 119, 140, -1, 1)
 	animatedSprite(ghost0, 2, 105, 105, 0, 0)
 	animatedSprite(ghost1, 2, 105, 119, 0, 0)
 	animatedSprite(ghost2, 2, 133, 105, 0, 0)
@@ -36,9 +36,12 @@
 	animatedSprite(null,   0,   0,   0, 0, 0)
   
 .data
+scoreData:
+.word 0
 # 35x35 Pacman Arena - Sprites 7x7
 grid:
-.ascii "ENNNNNNGNNNGNNNGF@EGNNNGNNNGNNNNNNF"
+#.ascii "ENNNNNNGNNNGNNNGF@EGNNNGNNNGNNNNNNF"
+.ascii "ENNNNNNGNNNGNNNGFNEGNNNGNNNGNNNNNNF"
 .ascii "IA@@@@@I@@@I@@@LK@JM@@@I@@@I@@@@@AI"
 .ascii "I@ONNP@I@Q@I@Q@I@@@I@Q@I@Q@I@ONNP@I"
 .ascii "I@@@@@@I@I@I@I@R@Q@R@I@I@I@I@@@@@@I"
@@ -54,9 +57,11 @@ grid:
 .ascii "I@@@@@@I@@@@I@@@@@@@@@I@@@@I@@@@@@I"
 .ascii "LNNNNP@I@EF@R@ENP@ONF@R@EF@I@ONNNNM"
 .ascii "IA@@@@@I@JK@@@IB@@@BI@@@JK@I@@@@@AI"
-.ascii "JNNNNNNK@@@@Q@IA@@@AI@Q@@@@JNNNNNNK"
+#.ascii "JNNNNNNK@@@@Q@IA@@@AI@Q@@@@JNNNNNNK"
+.ascii "JNNNNNNK@@@@Q@@A@@@A@@Q@@@@JNNNNNNK"
 #.ascii "JNNNNNNK@@@@Q@IABABAI@Q@@@@JNNNNNNK"
-.ascii "@@@@@@@@@OP@I@IB@@@BI@I@OP@@@@@@@@@"
+#.ascii "@@@@@@@@@OP@I@IB@@@BI@I@OP@@@@@@@@@"
+.ascii "I@@@@@@@@OP@I@IB@@@BI@I@OP@@@@@@@@I"
 .ascii "ENNNNNNF@@@@R@JNNNNNK@R@@@@ENNNNNNF"
 .ascii "IA@@@@@I@EF@@@@@@@@@@@@@EF@I@@@@@AI"
 .ascii "LNNNNP@I@JK@ENNNPCONNNF@JK@I@ONNNNM"
@@ -73,7 +78,9 @@ grid:
 .ascii "I@@@@@@I@I@I@I@Q@R@Q@I@I@I@I@@@@@@I"
 .ascii "I@ONNP@I@R@I@R@I@@@I@R@I@R@I@ONNP@I"
 .ascii "IA@@@@@I@@@I@@@LF@EM@@@I@@@I@@@@@AI"
-.ascii "JNNNNNNHNNNHNNNHK@JHNNNHNNNHNNNNNNK"
+#.ascii "JNNNNNNHNNNHNNNHK@JHNNNHNNNHNNNNNNK"
+.ascii "JNNNNNNHNNNHNNNHKNJHNNNHNNNHNNNNNNK"
+
 
 .eqv BLACK  0x00000000
 .eqv BLUE   0x001111ff

@@ -16,16 +16,12 @@
 	#printString("\n Result: ")
 	#printInt($v0)
 	#EndProgram
-	#lb $v0, grid	
-	#printString("\n V0: ")	
-	#printInt($v0)
-	#EndProgram
 #############################################################################################################    
 startGame:
 	#CHAMA DRAW GRID
 	jal 	drawGridHardCoded   			# void drawGridLinear(void)
 	#EndProgram
-	#jal 	enableProcessorInterrupt
+	jal 	enableProcessorInterrupt
 	jal 	enableKeyboardInterrupt	# void enableKeyboardInterrupt()
     	
 #SysLock # While(1); Usefull to test imterrupts
@@ -39,19 +35,21 @@ main:
 
 	la 	$a0, pacman	# a0 = &pacman
 	la	$a1, kbBuffer	
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)
 	jal	moveSprite
+	jal 	drawSprite	# void drawSprite(struct animetedSprite)
+	jal  score
+	
 	#EndProgram
-
 	
 	la 	$a0, ghost0	# s0 = &ghost0
 	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	jal	moveGhost
 	
 	la 	$a0, ghost1	# s0 = &ghost1
-	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
+	#jal	redrawGrid
 	jal	moveGhost
-
+	jal 	drawSprite	# void drawSprite(struct animetedSprite)
+		
 	la 	$a0, ghost2	# s0 = &ghost2
 	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	jal	moveGhost
@@ -68,15 +66,105 @@ main:
 	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	jal	moveGhost
 	
-	la 	$a0, ghost0	# s0 = &ghost0
-	jal 	createMovement
+
 		
 	DelayMs(20)
 	#DelayMs(500)
+	#printString("\n HERE ")
 	addi	$a3, $a3, 1
+	la 	$a0, ghost0	# s0 = &ghost0
+	jal 	createMovement
+	
    	b 	main			# goto main
    	
 #############################################################################################################    
+
+#############################################################################################################
+.globl score
+ score:		# (void)score(&sprite)
+	addi $sp, $sp, -64
+	sw 	$ra, 0($sp)
+	sw 	$s0, 4($sp)
+	sw 	$s1, 8($sp)
+	sw 	$s2, 12($sp)
+	sw 	$s3, 16($sp)
+	sw 	$s4, 20($sp)
+	
+	sw 	$a0, 48($sp)
+	sw 	$a1, 52($sp)
+	sw 	$a2, 56($sp)
+	sw 	$a3, 60($sp)
+	
+#animated_sprite (%name, %id, %pos_x, %pos_y, %mov_x, %mov_y)
+#		ofset:	&  ,  0  ,   4  ,    8  ,   12  ,  16	
+
+	lw	$s0, 4($a0) 	# s0 = animatedSprite.posX;
+	lw	$s1, 8($a0) 	# s1 = animatedSprite.posY;
+	la 	$s4,	grid
+	
+	#move $t2, $s0	# tPosX += animatedSprite.movX;
+	#move $t3, $s1	# tPosY += animatedSprite.movY;
+	
+	div $s0, $s0, X_SCALE	# tPosX /= 7;
+	div $s1, $s1, Y_SCALE	# tPosY /= 7;
+	
+	mul	$s1, $s1, GRID_COLS	# tPosY *= 35;
+	add	$s0, $s0, $s1		# tPosX += tPosY;
+	
+	add	$s0, $s0,	$s4		# (tPosX + tPosY) += &grid 
+	lb	$s1, ($s0)		# load grid[tPosX][tPosY];	
+	
+	lw	$t1, scoreData		# load score int
+	
+	beq 	$s1, $zero, scoreEnd
+	beq 	$s1, 64, scoreTenPoins
+	beq 	$s1, 65, scoreTenPoins
+	beq 	$s1, 66, scoreThousandPoins
+	beq 	$s1, 68, scoreHundredPoins
+	b 	scoreSetToZero
+	
+scoreTenPoins:
+
+	addi $t1, $t1, 10 
+	b 	scoreSetToZero
+
+scoreThousandPoins:
+
+	addi $t1, $t1, 1000 
+	b 	scoreSetToZero
+
+scoreHundredPoins:
+
+	addi $t1, $t1, 100
+	b 	scoreSetToZero
+	
+scoreSetToZero:
+
+	add 	$t0, $zero, $zero
+	sb	$t0, ($s0)		# grid[tPosX][tPosY] = 0;
+	
+	sw 	$t1, scoreData
+	printString("\n Score: ")
+	printInt($t1)
+	
+scoreEnd:
+
+	lw 	$ra, 0($sp)
+	lw 	$s0, 4($sp)
+	lw 	$s1, 8($sp)
+	lw 	$s2, 12($sp)
+	lw 	$s3, 16($sp)
+	lw 	$s4, 20($sp)
+	
+	lw 	$a0, 48($sp)
+	lw 	$a1, 52($sp)
+	lw 	$a2, 56($sp)
+	lw 	$a3, 60($sp)
+	
+	addi $sp, $sp, 64
+	jr 	$ra				# return		
+
+#############################################################################################################
 
 #########################################################################################################
 
@@ -98,10 +186,10 @@ createMovement:
 	move	$s0, $a0	# s0 = &sprite
 	add 	$s1, $zero, $zero
 	
-	
-	ble	$a3,	23, createMovementEnd	
-	add 	$a3, $zero, $zero
-	
+	ble	$a3,	100, createMovementEnd	
+	#add 	$a3, $zero, $zero
+	addi	$a3, $zero, 50
+		
 createMovementLoop:			
 	bge  $s1, NUMBER_OF_GHOSTS, createMovementEnd	# ((i => 1225) ? goto drawGridExit)
 	addi $s1, $s1, 1			# s1++
@@ -117,7 +205,7 @@ createMovementLoop:
 	sw 	$s3, 12($s0)	# sprite.movX 
 	sw 	$s4, 16($s0)	# sprite.movY 
 	
-	addi $s0, $s0, 20 
+	addi $s0, $s0, 20 	# 
 								
 	b createMovementLoop
 
@@ -153,10 +241,10 @@ moveSprite:
 	sw 	$s6, 40($sp)
 	sw 	$s7, 44($sp)
 	
-	sw 	$a0, 48($sp)
-	sw 	$a1, 52($sp)
-	sw 	$a2, 56($sp)
-	sw 	$a3, 60($sp)
+	#sw 	$a0, 48($sp)
+	#sw 	$a1, 52($sp)
+	#sw 	$a2, 56($sp)
+	#sw 	$a3, 60($sp)
 	
 	##################### a0 = &sprite	
 	
@@ -177,15 +265,6 @@ moveSpriteKbBufferIsValid:
 	move $a2, $s7						# a2 = kbBuffer.Y
 	jal	checkWall						# always (x,0) or (0,y) being x|y -> (int)(-1 to 1)
 	bge	$v0,	69, moveSpriteKbBufferIsNotValid		# (returnNextId(struct sprite) > 69) ? goto moveSpriteEnd
-	
-	printString("\n s3: ")	
-	printInt($s3)
-	
-	printString("\n s4: ")	
-	printInt($s4)
-	
-	printString("\n s5: ")	
-	printInt($s5)
 	
 	add 	$s3, $zero, $s6				# sprite.movX = kbBuffer.X;
 	add 	$s4, $zero, $s7				# sprite.movY = kbBuffer.Y;
@@ -719,47 +798,46 @@ drawSpriteEnd:
 
 .ktext 0x80000180
 #Create Interuptions Stack 
-  	move  	$k0, $at      # $k0 = $at 
-  	la    	$k1, kernelRegisters    
-  	sw    	$k0, 0($k1)   
-  	sw    	$v0, 4($k1)
-  	sw    	$v1, 8($k1)
-  	sw    	$a0, 16($k1)
-  	sw    	$a1, 20($k1)
- 	sw    	$a2, 24($k1)
-  	sw    	$a3, 28($k1)
- 	sw    	$t0, 32($k1)
-	sw    	$t1, 36($k1) 
-	sw    	$t2, 40($k1)
-	sw    	$t3, 44($k1)
-	sw    	$t4, 48($k1)
-  	sw    	$t5, 52($k1)
-	sw    	$t6, 56($k1)
-	sw    	$t7, 60($k1)
-	sw    	$s0, 64($k1)
-	sw    	$s1, 68($k1)
-	sw    	$s2, 72($k1)
-	sw    	$s3, 76($k1) 
-	sw    	$s4, 80($k1)
-	sw    	$s5, 84($k1)
-	sw    	$s6, 88($k1)
-	sw    	$s7, 92($k1)
-	sw    	$t8, 96($k1)
-	sw    	$t9, 100($k1)
-	sw    	$gp, 104($k1)
-	sw    	$sp, 108($k1)
-	sw    	$fp, 112($k1)
-	sw    	$ra, 116($k1)
-	mfhi  	$k0
-  	sw    	$k0, 120($k1)
-  	mflo  	$k0
-  	sw    	$k0, 124($k1)
+  	move	$k0, $at      # $k0 = $at 
+  	la	$k1, kernelRegisters    
+  	sw	$k0, 0($k1)   
+  	sw	$v0, 4($k1)
+  	sw   $v1, 8($k1)
+  	sw   $a0, 16($k1)
+  	sw   $a1, 20($k1)
+ 	sw   $a2, 24($k1)
+  	sw   $a3, 28($k1)
+ 	sw   $t0, 32($k1)
+	sw   $t1, 36($k1) 
+	sw   $t2, 40($k1)
+	sw   $t3, 44($k1)
+	sw   $t4, 48($k1)
+  	sw   $t5, 52($k1)
+	sw   $t6, 56($k1)
+	sw   $t7, 60($k1)
+	sw   $s0, 64($k1)
+	sw   $s1, 68($k1)
+	sw   $s2, 72($k1)
+	sw   $s3, 76($k1) 
+	sw   $s4, 80($k1)
+	sw   $s5, 84($k1)
+	sw   $s6, 88($k1)
+	sw   $s7, 92($k1)
+	sw   $t8, 96($k1)
+	sw   $t9, 100($k1)
+	sw   $gp, 104($k1)
+	sw   $sp, 108($k1)
+	sw   $fp, 112($k1)
+	sw   $ra, 116($k1)
+	mfhi $k0
+  	sw   $k0, 120($k1)
+  	mflo $k0
+  	sw	$k0, 124($k1)
   	
-  	printStringAdress(stringGenericEx)
+printStringAdress(stringGenericEx)
 	
   	mfc0	$s0, $13
-	andi	$s0,$s0,0xFC  #00x7C
-
+	andi	$s0,$s0,0x7C  #00x7C
 
   	la 	$s1, jtable	#load andress of vector
   	add 	$s1, $s1, $s0 	# jtable adress
@@ -769,15 +847,15 @@ drawSpriteEnd:
 case0:
 	printStringAdress(stringHWInterruptEx)
 	
-	mfc0	$s0, $14
-	addi	$s0, $s0, -4
-	mtc0	$s0, $14
+	#mfc0	$s0, $14
+	#addi	$s0, $s0, -4
+	#mtc0	$s0, $14
     
 	la 	$s1, 0xffff0000  	#Load keyboard info on $s1 to the right address
 	lw 	$s2, 4($s1)		#Carregando dados lidos pelo teclado
     
      #la  	$s0, pacman	# Load Sprite adress , Sprite Name
-	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
 	beq 	$s2,100, hwInterruptGoRight	# Key d, go Right
 	beq 	$s2, 68, hwInterruptGoRight	# Key D, go Right
 	beq 	$s2, 97, hwInterruptGoLeft	# Key a, go Left
@@ -825,7 +903,7 @@ hwInterruptEnd:
  	
  	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
  	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
- 	li	$s1, 1
+ 	addi	$s1, $zero, 1	# @ s1 = 1;
  	sw 	$s1, 0($s0) 	# kbBuffer.isValid = 1;
  	sw 	$s2, 4($s0)	# kbBuffer.x = s2;
  	sw 	$s3, 8($s0)	# kbBuffer.y = s3;

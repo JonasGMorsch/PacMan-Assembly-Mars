@@ -78,8 +78,7 @@ mStr: .asciiz %str
 	li $a1, 3
 	li $v0, 42
 	syscall
-	addi	$a0, $a0, -1
-	move	$v0,	$a0
+	addi	$v0, $a0, -1
 	
 	lw 	$a0, 0($sp)
 	lw 	$a1, 4($sp)
