@@ -1,7 +1,7 @@
 .include "graphics.asm"
-.include "macros.asm"
+.include "Macros.asm"
 .include "control.asm"
-
+.align 2
 #.include ".asm"
 #.data 
 #stringTest98: .asciiz "test test test \n"
@@ -21,7 +21,7 @@ startGame:
 	#CHAMA DRAW GRID
 	jal 	drawGridHardCoded   			# void drawGridLinear(void)
 	#EndProgram
-	jal 	enableProcessorInterrupt
+	#jal 	enableProcessorInterrupt
 	jal 	enableKeyboardInterrupt	# void enableKeyboardInterrupt()
     	
 #SysLock # While(1); Usefull to test imterrupts
@@ -66,8 +66,7 @@ main:
 	jal 	drawSprite	# void drawSprite(struct animetedSprite)	
 	jal	moveGhost
 	
-
-		
+	
 	DelayMs(20)
 	#DelayMs(500)
 	#printString("\n HERE ")
@@ -75,8 +74,48 @@ main:
 	la 	$a0, ghost0	# s0 = &ghost0
 	jal 	createMovement
 	
+	jal handleGamePause
+
    	b 	main			# goto main
-   	
+ 
+#############################################################################################################    
+
+#############################################################################################################
+.globl handleGamePause
+handleGamePause:		# (void)score(&sprite)
+	addi $sp, $sp, -64
+	sw 	$ra, 0($sp)
+	sw 	$s0, 4($sp)
+	sw 	$s1, 8($sp)
+	sw 	$s2, 12($sp)
+	sw 	$s3, 16($sp)
+	sw 	$s4, 20($sp)
+	
+	sw 	$a0, 48($sp)
+	sw 	$a1, 52($sp)
+	sw 	$a2, 56($sp)
+	sw 	$a3, 60($sp)
+	
+handleGamePauseLoop:
+	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+	lw 	$s4, 12($s0)	# Load kbBuffer.isPaused
+	bne $s4, $zero, handleGamePauseLoop
+	
+handleGamePauseEnd:
+	lw 	$ra, 0($sp)
+	lw 	$s0, 4($sp)
+	lw 	$s1, 8($sp)
+	lw 	$s2, 12($sp)
+	lw 	$s3, 16($sp)
+	lw 	$s4, 20($sp)
+	
+	lw 	$a0, 48($sp)
+	lw 	$a1, 52($sp)
+	lw 	$a2, 56($sp)
+	lw 	$a3, 60($sp)
+	
+	addi $sp, $sp, 64
+	jr 	$ra				# return	  	  	
 #############################################################################################################    
 
 #############################################################################################################
@@ -671,30 +710,6 @@ stopSprite:
 
 #############################################################################################################    
 
-# (X,Y, *gride)
-#.globl checkWall 
-#checkWall:
-#	addi $sp, $sp, -24
-#	sw $ra, 16($sp)
-#	
-#	jal returnId
-#	bge $v0, 5, checkWallTrue
-#	#li $v0, 0
-#	add $v0, $zero, $zero
-#	b checkWallEnd
-	
-#checkWallTrue:
-#	#li $v0, 1
-#	add $v0, $zero, 1
-	
-#checkWallEnd: 	
- #	lw $ra, 16($sp)
-#	addi $sp, $sp, 24
-#	jr $ra
-#############################################################################################################
-
-#############################################################################################################    
-
 .globl drawSprite
 drawSprite:				# void drawSprite(struct animetedSprite)	
 	
@@ -794,9 +809,8 @@ drawSpriteEnd:
 
 ############################################################################################################# 	
     	  	  	
-#animação + teclado + mov + stop + strcut
+.ktext 0x80000180  
 
-.ktext 0x80000180
 #Create Interuptions Stack 
   	move	$k0, $at      # $k0 = $at 
   	la	$k1, kernelRegisters    
@@ -836,8 +850,12 @@ drawSpriteEnd:
   	
 printStringAdress(stringGenericEx)
 	
-  	mfc0	$s0, $13
-	andi	$s0,$s0,0x7C  #00x7C
+  	#mfc0	$s0, $13
+	#andi	$s0,$s0,0x7C  #00x7C
+	
+	mfc0	$s0, $13
+	andi	$s0, 0xFC
+	srl	$s0, $s0, 2
 
   	la 	$s1, jtable	#load andress of vector
   	add 	$s1, $s1, $s0 	# jtable adress
@@ -851,108 +869,177 @@ case0:
 	#addi	$s0, $s0, -4
 	#mtc0	$s0, $14
     
-	la 	$s1, 0xffff0000  	#Load keyboard info on $s1 to the right address
-	lw 	$s2, 4($s1)		#Carregando dados lidos pelo teclado
-    
-     #la  	$s0, pacman	# Load Sprite adress , Sprite Name
-	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
-	beq 	$s2,100, hwInterruptGoRight	# Key d, go Right
-	beq 	$s2, 68, hwInterruptGoRight	# Key D, go Right
-	beq 	$s2, 97, hwInterruptGoLeft	# Key a, go Left
-	beq 	$s2, 65, hwInterruptGoLeft	# Key A, go Left
-	beq 	$s2,119, hwInterruptGoUp		# Key w, go Up
-	beq 	$s2, 87, hwInterruptGoUp		# Key W, go Up
-	beq 	$s2,115, hwInterruptGoDown	# Key s, go Down
-	beq 	$s2, 83, hwInterruptGoDown	# Key S, go Down
-	beq 	$s2, 32, hwInterruptPause	# Key Space, Pause game
-	b   	switchCaseBreak
+	#la 	$s1, 0xffff0000
+	#lw 	$s2, 4($s1)		
+	
+
+
+	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+	lw 	$s1, 0($s0) 	# Load kbBuffer.isValid
+ 	lw 	$s2, 4($s0)	# Load kbBuffer.x
+ 	lw 	$s3, 8($s0)	# Load kbBuffer.y
+	lw 	$s4, 12($s0)	# Load kbBuffer.isPaused
+	
+	la 	$s7, 0xffff0004  	# Load keyboard info on $s1 to the right address
+	lw 	$s7, ($s7)		# Load keyboard data from 0xffff0004
+	#printInt($s2)
+	
+	beq 	$s7,100, hwInterruptGoRight	# Key d, go Right
+	beq 	$s7, 68, hwInterruptGoRight	# Key D, go Right
+	beq 	$s7, 97, hwInterruptGoLeft	# Key a, go Left
+	beq 	$s7, 65, hwInterruptGoLeft	# Key A, go Left
+	beq 	$s7,119, hwInterruptGoUp		# Key w, go Up
+	beq 	$s7, 87, hwInterruptGoUp		# Key W, go Up
+	beq 	$s7,115, hwInterruptGoDown	# Key s, go Down
+	beq 	$s7, 83, hwInterruptGoDown	# Key S, go Down
+	beq 	$s7, 32, hwInterruptPause	# Key Space, Pause game
+	beq 	$s7, 10, hwInterruptEnter	# Key Enter, Restart game if paused
+	b   	interruptEnd
     
 hwInterruptGoRight:
+
 	li  	$s2, 1	#x
 	li  	$s3, 0	#y
-	#sw 	$s1, 12($s0)
+	li  	$s4, 0	#isPaused
  	b 	hwInterruptEnd
  	
 hwInterruptGoLeft:
+
 	li  	$s2, -1	#x
 	li  	$s3, 0	#y
-	#sw 	$s1, 12($s0)
+	li  	$s4, 0	#isPaused
  	b 	hwInterruptEnd
  	
 hwInterruptPause:
-	li  	$s2, 0	#x
-	li  	$s3, 0	#y
+
+	#li  	$s2, 0	#x
+	#li  	$s3, 0	#y
+	
+	#printStringAdress(stringHere)
+		
+	beq $s4, 0, hwInterruptPauseIsZero
+	beq $s4, 1, hwInterruptPauseIsOne
+	
+hwInterruptPauseIsZero:
+	
+	li  	$s4, 1	#isPaused
  	b 	hwInterruptEnd
  	
+hwInterruptPauseIsOne:	
+
+	li  	$s4, 0	#isPaused
+ 	b 	hwInterruptEnd
+ 	
+hwInterruptEnter:
+
+	#li  	$s2, 0	#x
+	#li  	$s3, 0	#y
+	beq 	$s4, 0, hwInterruptEnd	
+	#beq 	$s4, 1, hwInterruptPause	
+	printStringAdress(stringHere)
+	
+	la $s7, startGame
+	jr $s7
+	
+	li  	$s2, 0	#x
+	li  	$s3, 0	#y
+	li  	$s4, 0	#isPaused
+	
+ 	b 	hwInterruptEnd
+
 hwInterruptGoUp:
+
 	li  	$s2, 0	#x
 	li  	$s3, -1	#y
- 	#sw 	$s2, 16($s0)
+	li  	$s4, 0	#isPaused
  	b 	hwInterruptEnd
  	
 hwInterruptGoDown:
 	li  	$s2, 0	#x
 	li  	$s3, 1	#y
-	#sw 	$s2, 16($s0)
+	li  	$s4, 0	#isPaused
  	b 	hwInterruptEnd
  	
 hwInterruptEnd:
+
     	#la  	$s0, pacman	# Load Sprite adress , Sprite Name
  	#sw 	$s1, 12($s0) 	#MOVE SPRITE
  	#sw 	$s2, 16($s0)
  	
  	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
- 	la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
- 	addi	$s1, $zero, 1	# @ s1 = 1;
+ 	#la  	$s0, kbBuffer	# Load Sprite adress , Sprite Name
+ 	addi	$s1, $zero, 1	# s1 = 1;
  	sw 	$s1, 0($s0) 	# kbBuffer.isValid = 1;
  	sw 	$s2, 4($s0)	# kbBuffer.x = s2;
  	sw 	$s3, 8($s0)	# kbBuffer.y = s3;
+	sw 	$s4, 12($s0)	# kbBuffer.isPaused = s4;
  	
-	b   	switchCaseBreak
+	b   	interruptEnd
 
 case4:
+
 	printStringAdress(stringLoadErrorEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case5:
+
 	printStringAdress(stringStoreErrorEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case6:
+
 	printStringAdress(stringBusInstErrorEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case7:
+
 	printStringAdress(stringBusLSErrorEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case8:
+
 	printStringAdress(stringInvalidSyscallEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case9:
+
 	printStringAdress(stringBreakPointEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case10:
+
 	printStringAdress(stringReservedEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case12:
+
 	printStringAdress(stringArithmeticEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
+	
 case13:
+
 	printStringAdress(stringTrapEx)
-    	b   	switchCaseBreak 
+    	b   	interruptEnd 
+	
 case1:
 case2:
 case3:
 case11:
 case14:
+
 	printStringAdress(stringInvalidEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
     
 case15:
+
 	printStringAdress(stringFloatInstEx)
-    	b   	switchCaseBreak
+    	b   	interruptEnd
 
 default:
+
 	printStringAdress(stringOutOfRangeEx)
 	
-switchCaseBreak:
+interruptEnd:
 #Restore Interuptions Stack 
 	la    	$k1, kernelRegisters
 	lw    	$k0, 0($k1)
@@ -992,9 +1079,11 @@ switchCaseBreak:
 	addiu 	$k0, $k0, 4   # Increment $k0 by 4 
 	mtc0  	$k0, $14      # EPC = point to next instruction 
 	eret
+	
 .kdata
 jtable: .word case0, case1, case2, case3, case4, case5, case6, case7, case8, case9, case10, case11, case12, case13, case14, case15, default
 
+.align 2
 # Excepion String Table
 stringGenericEx: 	.asciiz "\n Exception Occurred: "
 stringHWInterruptEx:	.asciiz "HW Interrupt\n"	  
@@ -1010,5 +1099,6 @@ stringTrapEx: 		.asciiz "Error caused by trap instruction\n"
 stringInvalidEx: 	.asciiz "Invalid Exception\n"
 stringFloatInstEx: 	.asciiz "Error caused by floating_point instruction\n"
 stringOutOfRangeEx: 	.asciiz "Out Of Range\n"
+stringHere: 	.asciiz "here!\n"
 .align 2
-kernelRegisters: .space    128
+kernelRegisters: .space    256
