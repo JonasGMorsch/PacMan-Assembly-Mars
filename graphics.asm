@@ -25,23 +25,29 @@
 	.word %movY
 .end_macro
 
-	animatedSprite(pacman, 3, 119, 140, -1, 1)
-	animatedSprite(ghost0, 2, 105, 105, 0, 0)
-	animatedSprite(ghost1, 2, 105, 119, 0, 0)
-	animatedSprite(ghost2, 2, 133, 105, 0, 0)
-	animatedSprite(ghost3, 2, 133, 119, 0, 0)
+	#animatedSprite(pacman, 3, 119, 140, 0, 0)
+	#animatedSprite(ghost0, 2, 105, 105, -1, 1)
+	#animatedSprite(ghost1, 2, 105, 119, -1, -1)
+	#animatedSprite(ghost2, 2, 133, 105, 1, 1)
+	#animatedSprite(ghost3, 2, 133, 119, 1, -1)
+	#animatedSprite(ghost4, 2, 112, 112, -1, 0)
+	#animatedSprite(ghost5, 2, 126, 112, 1, 0)
+	#animatedSprite(null,   0,   0,   0, 0, 0)
+	animatedSprite(pacman, 3, 0, 0, 0, 0)
+	animatedSprite(ghost0, 2, 0, 0, 0, 0)
+	animatedSprite(ghost1, 2, 0, 0, 0, 0)
+	animatedSprite(ghost2, 2, 0, 0, 0, 0)
+	animatedSprite(ghost3, 2, 0, 0, 0, 0)
+	animatedSprite(ghost4, 2, 0, 0, 0, 0)
+	animatedSprite(ghost5, 2, 0, 0, 0, 0)
+	animatedSprite(null	 , 0, 0, 0, 0, 0)
 	
-	animatedSprite(ghost4, 2, 112, 112, 0, 0)
-	animatedSprite(ghost5, 2, 126, 112, 0, 0)
-	animatedSprite(null,   0,   0,   0, 0, 0)
-  
+	
 .data
-scoreData:
-.word 0
 # 35x35 Pacman Arena - Sprites 7x7
 grid:
 #.ascii "ENNNNNNGNNNGNNNGF@EGNNNGNNNGNNNNNNF"
-.ascii "ENNNNNNGNNNGNNNGFNEGNNNGNNNGNNNNNNF"
+.ascii "ENNNNNNGNNNGNNNGGNGGNNNGNNNGNNNNNNF"
 .ascii "IA@@@@@I@@@I@@@LK@JM@@@I@@@I@@@@@AI"
 .ascii "I@ONNP@I@Q@I@Q@I@@@I@Q@I@Q@I@ONNP@I"
 .ascii "I@@@@@@I@I@I@I@R@Q@R@I@I@I@I@@@@@@I"
@@ -56,13 +62,10 @@ grid:
 .ascii "I@JNNK@I@JP@Q@OHP@OHP@Q@OK@I@JNNK@I"
 .ascii "I@@@@@@I@@@@I@@@@@@@@@I@@@@I@@@@@@I"
 .ascii "LNNNNP@I@EF@R@ENP@ONF@R@EF@I@ONNNNM"
-.ascii "IA@@@@@I@JK@@@IB@@@BI@@@JK@I@@@@@AI"
-#.ascii "JNNNNNNK@@@@Q@IA@@@AI@Q@@@@JNNNNNNK"
-.ascii "JNNNNNNK@@@@Q@@A@@@A@@Q@@@@JNNNNNNK"
-#.ascii "JNNNNNNK@@@@Q@IABABAI@Q@@@@JNNNNNNK"
-#.ascii "@@@@@@@@@OP@I@IB@@@BI@I@OP@@@@@@@@@"
-.ascii "I@@@@@@@@OP@I@IB@@@BI@I@OP@@@@@@@@I"
-.ascii "ENNNNNNF@@@@R@JNNNNNK@R@@@@ENNNNNNF"
+.ascii "IA@@@@@I@JK@@@R@@@@@R@@@JK@I@@@@@AI"
+.ascii "LNNNNNNK@@@@Q@@A@@@A@@Q@@@@JNNNNNNM"
+.ascii "I@@@@@@@@OP@I@Q@@@@@Q@I@OP@@@@@@@@I"
+.ascii "LNNNNNNF@@@@R@JNNNNNK@R@@@@ENNNNNNM"
 .ascii "IA@@@@@I@EF@@@@@@@@@@@@@EF@I@@@@@AI"
 .ascii "LNNNNP@I@JK@ENNNPCONNNF@JK@I@ONNNNM"
 .ascii "I@@@@@@I@@@@I@@@@@@@@@I@@@@I@@@@@@I"
@@ -79,7 +82,7 @@ grid:
 .ascii "I@ONNP@I@R@I@R@I@@@I@R@I@R@I@ONNP@I"
 .ascii "IA@@@@@I@@@I@@@LF@EM@@@I@@@I@@@@@AI"
 #.ascii "JNNNNNNHNNNHNNNHK@JHNNNHNNNHNNNNNNK"
-.ascii "JNNNNNNHNNNHNNNHKNJHNNNHNNNHNNNNNNK"
+.ascii "JNNNNNNHNNNHNNNHHNHHNNNHNNNHNNNNNNK"
 
 
 .eqv BLACK  0x00000000
